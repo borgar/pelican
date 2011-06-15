@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from pelican.utils import slugify, truncate_html_words
+from pelican.utils import slugify, truncate_html_words, format_url
 from pelican.log import *
 from pelican.settings import _DEFAULT_CONFIG
 from os import getenv
@@ -11,6 +11,7 @@ class Page(object):
     :param content: the string to parse, containing the original content.
     """
     mandatory_properties = ('title',)
+    default_urls = ('pages/:title.html', 'pages/:title-:lang.html',)
 
     def __init__(self, content, metadata=None, settings=None, filename=None):
         # init parameters
@@ -52,20 +53,17 @@ class Page(object):
         if not hasattr(self, 'slug') and hasattr(self, 'title'):
             self.slug = slugify(self.title)
 
-        # create save_as from the slug (+lang)
-        if not hasattr(self, 'save_as') and hasattr(self, 'slug'):
-            if self.in_default_lang:
-                self.save_as = '%s.html' % self.slug
-                clean_url = '%s/' % self.slug
-            else:
-                self.save_as = '%s-%s.html' % (self.slug, self.lang)
-                clean_url = '%s-%s/' % (self.slug, self.lang)
 
-        # change the save_as regarding the settings
-        if settings.get('CLEAN_URLS', False):
-            self.url = clean_url
-        elif hasattr(self, 'save_as'):
-            self.url = self.save_as
+        # get a link format for this item
+        self.urls = self.default_urls
+        # settings will be PAGE_URL for Page, ARTICLE_URL for Article..
+        url_setting_key = "%s_URL" % self.__class__.__name__.upper()
+        if url_setting_key in settings:
+            urls = settings[url_setting_key]
+            # allow both a single format, and a (lang, default_lang) format
+            if isinstance(urls, (str, unicode)):
+               urls = (urls, urls)
+            self.urls = urls
 
         if filename:
             self.filename = filename
@@ -94,6 +92,25 @@ class Page(object):
             if not hasattr(self, prop):
                 raise NameError(prop)
 
+    def _url(self, as_file=False):
+        url_format = self.urls[0] if self.in_default_lang else self.urls[1]
+        return format_url( url_format, {
+            'title': self.slug,
+            'slug': self.slug,
+            'lang': self.lang,
+            'year': self.date.strftime("%Y"),
+            'month': self.date.strftime("%m"),
+            'day': self.date.strftime("%d"),
+        }, add_file_suffix=as_file)
+
+    @property
+    def url(self, as_file=False):
+        return self._url()
+
+    @property
+    def save_as(self):
+        return self._url(True)
+
     @property
     def content(self):
         if hasattr(self, "_get_content"):
@@ -105,6 +122,7 @@ class Page(object):
 
 class Article(Page):
     mandatory_properties = ('title', 'date', 'category')
+    default_urls = (':title.html', ':title-:lang.html',)
 
 
 class Quote(Page):

@@ -13,7 +13,7 @@ from jinja2 import Environment, FileSystemLoader, PrefixLoader, ChoiceLoader
 from jinja2.exceptions import TemplateNotFound
 
 from pelican.utils import copy, get_relative_path, process_translations, open
-from pelican.utils import slugify
+from pelican.utils import format_url, slugify
 from pelican.contents import Article, Page, is_valid_content
 from pelican.readers import read_file
 from pelican.log import *
@@ -168,41 +168,51 @@ class ArticlesGenerator(Generator):
         PAGINATED_TEMPLATES = self.settings.get('PAGINATED_DIRECT_TEMPLATES')
         for template in self.settings.get('DIRECT_TEMPLATES'):
             paginated = {}
+            pg_url = format_url(self.settings.get('%s_URL'%template.upper(), ':title.html'),
+                              dict([('title',template), (template,template)]),
+                              add_file_suffix=True)
             if template in PAGINATED_TEMPLATES:
                 paginated = {'articles': self.articles, 'dates': self.dates}
-            write('%s.html' % template, self.get_template(template), self.context,
+            write(pg_url, self.get_template(template), self.context,
                     blog=True, paginated=paginated, page_name=template)
 
         # and subfolders after that
         tag_template = self.get_template('tag')
+        tag_url = self.settings.get('TAG_URL', 'tag/:title.html')
         for tag, articles in self.tags.items():
             articles.sort(key=attrgetter('date'), reverse=True)
             dates = [article for article in self.dates if article in articles]
-            write('tag/%s.html' % tag, tag_template, self.context, tag=tag,
+            obj_tag = {'category':tag, 'title':tag}
+            write(format_url(tag_url, obj_tag, add_file_suffix=True),
+                tag_template, self.context,
+                tag=tag,
                 articles=articles, dates=dates,
                 paginated={'articles': articles, 'dates': dates},
-                page_name='tag/%s' % tag)
+                page_name=format_url(tag_url, obj_tag))
 
         category_template = self.get_template('category')
+        category_url = self.settings.get('CATEGORY_URL', 'category/:title.html')
         for cat, articles in self.categories:
             dates = [article for article in self.dates if article in articles]
-            write('category/%s.html' % cat, category_template, self.context,
+            obj_cat = {'category':cat, 'title':cat}
+            write(format_url(category_url, obj_cat, add_file_suffix=True), category_template, self.context,
                 category=cat, articles=articles, dates=dates,
                 paginated={'articles': articles, 'dates': dates},
-                page_name='category/%s' % cat)
+                page_name=format_url(category_url, obj_cat))
 
         author_template = self.get_template('author')
+        author_url = self.settings.get('AUTHOR_URL', 'author/:title.html')
         for aut, articles in self.authors:
             dates = [article for article in self.dates if article in articles]
-            write('author/%s.html' % aut, author_template, self.context,
+            obj_aut = {'author':aut, 'title':aut}
+            write(format_url(author_url, obj_aut, add_file_suffix=True), author_template, self.context,
                 author=aut, articles=articles, dates=dates,
                 paginated={'articles': articles, 'dates': dates},
-                page_name='author/%s' % aut)
+                page_name=format_url(author_url, obj_aut))
 
         for article in self.drafts:
             write('drafts/%s.html' % article.slug, article_template, self.context,
                     article=article, category=article.category)
-
 
     def generate_context(self):
         """change the context"""
@@ -338,7 +348,7 @@ class PagesGenerator(Generator):
 
     def generate_output(self, writer):
         for page in chain(self.translations, self.pages):
-            writer.write_file('pages/%s' % page.save_as, self.get_template('page'),
+            writer.write_file(page.save_as, self.get_template('page'),
                     self.context, page=page,
                     relative_urls = self.settings.get('RELATIVE_URLS'))
 

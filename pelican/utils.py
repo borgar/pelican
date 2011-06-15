@@ -42,6 +42,19 @@ def slugify(value):
     value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
     return re.sub('[-\s]+', '-', value)
 
+
+def format_url( inurl, props, add_file_suffix=False ):
+    bits = re.split(ur'(\:[a-z]+)', inurl)
+    url = u''.join(props.get(bit[1:],bit) if bit.startswith(':') else bit
+                  for bit in bits )
+    if add_file_suffix and not url.endswith('.html'):
+        if url.endswith('/'):
+            url = "%sindex.html" % url
+        else:
+            url = "%s.html" % url
+    return url
+
+
 def copy(path, source, destination, destination_path=None, overwrite=False):
     """Copy path from origin to destination.
 
