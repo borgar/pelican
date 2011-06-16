@@ -94,13 +94,14 @@ class Page(object):
 
     def _url(self, as_file=False):
         url_format = self.urls[0] if self.in_default_lang else self.urls[1]
+        date = getattr(self, 'date', None)
         return format_url( url_format, {
             'title': self.slug,
             'slug': self.slug,
             'lang': self.lang,
-            'year': self.date.strftime("%Y"),
-            'month': self.date.strftime("%m"),
-            'day': self.date.strftime("%d"),
+            'year': date.strftime("%Y") if date else '',
+            'month': date.strftime("%m") if date else '',
+            'day': date.strftime("%d") if date else '',
         }, add_file_suffix=as_file)
 
     @property
