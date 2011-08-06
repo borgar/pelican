@@ -48,7 +48,6 @@ _DEFAULT_CONFIG = {'PATH': None,
                    'CATEGORY_URL': 'category/:title.html',
                    'TAG_URL': 'tag/:title.html',
                    'AUTHOR_URL': 'author/:title.html',
-                   'ARTICLE_PERMALINK_STRUCTURE': ''
                    }
 
 def read_settings(filename):
