@@ -48,7 +48,9 @@ def format_url(url_tmpl, props, add_file_suffix=False):
     url = u''.join([ props.get(bit[1:],bit) if bit.startswith(':') else bit
                      for bit in re.split(ur'(\:[a-z]+)', url_tmpl) ])
     # remove any sequences of url separators and trailing dashes
-    url = re.sub(ur'([\\/-])[\\\/\.-]+', r'\1', url).rstrip('-')
+    url, suffix = url.rsplit( '.', 1 )
+    url = re.sub(ur'([\\/-])[\\\/-]+', r'\1', url).rstrip('-')
+    url = u'.'.join((url, suffix))
     # add a file extension (or file) if requested
     if add_file_suffix and not url.endswith('.html'):
         if url.endswith('/'):
