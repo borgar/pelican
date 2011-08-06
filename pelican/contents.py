@@ -11,7 +11,6 @@ class Page(object):
     :param content: the string to parse, containing the original content.
     """
     mandatory_properties = ('title',)
-    default_urls = ('pages/:title.html', 'pages/:title-:lang.html',)
 
     def __init__(self, content, metadata=None, settings=None, filename=None):
         # init parameters
@@ -54,16 +53,11 @@ class Page(object):
             self.slug = slugify(self.title)
 
 
-        # get a link format for this item
-        self.urls = self.default_urls
-        # settings will be PAGE_URL for Page, ARTICLE_URL for Article..
-        url_setting_key = "%s_URL" % self.__class__.__name__.upper()
-        if url_setting_key in settings:
-            urls = settings[url_setting_key]
-            # allow both a single format, and a (lang, default_lang) format
-            if isinstance(urls, (str, unicode)):
-               urls = (urls, urls)
-            self.urls = urls
+        # resolve the permalink format for this item the dynamic settings
+        # will be PAGE_URL for Page, ARTICLE_URL for Article, and so on...
+        self.url_format = settings.get("%s_URL" % self.__class__.__name__.upper(), ':title-:altlang.html')
+        self.url = self._url()
+        self.save_as = self._url(True)
 
         if filename:
             self.filename = filename
@@ -86,6 +80,7 @@ class Page(object):
         if not hasattr(self, 'status'):
             self.status = settings['DEFAULT_STATUS']
 
+
     def check_properties(self):
         """test that each mandatory property is set."""
         for prop in self.mandatory_properties:
@@ -93,24 +88,16 @@ class Page(object):
                 raise NameError(prop)
 
     def _url(self, as_file=False):
-        url_format = self.urls[0] if self.in_default_lang else self.urls[1]
         date = getattr(self, 'date', None)
-        return format_url( url_format, {
+        return format_url( self.url_format, {
             'title': self.slug,
             'slug': self.slug,
             'lang': self.lang,
+            'altlang': '' if self.in_default_lang else self.lang,
             'year': date.strftime("%Y") if date else '',
             'month': date.strftime("%m") if date else '',
             'day': date.strftime("%d") if date else '',
         }, add_file_suffix=as_file)
-
-    @property
-    def url(self, as_file=False):
-        return self._url()
-
-    @property
-    def save_as(self):
-        return self._url(True)
 
     @property
     def content(self):
@@ -123,7 +110,6 @@ class Page(object):
 
 class Article(Page):
     mandatory_properties = ('title', 'date', 'category')
-    default_urls = (':title.html', ':title-:lang.html',)
 
 
 class Quote(Page):
