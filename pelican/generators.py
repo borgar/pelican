@@ -177,42 +177,36 @@ class ArticlesGenerator(Generator):
                     blog=True, paginated=paginated, page_name=template)
 
         # and subfolders after that
-        tag_template = self.get_template('tag')
-        tag_url = self.settings.get('TAG_URL', 'tag/:title.html')
-        for tag, articles in self.tags.items():
-            articles.sort(key=attrgetter('date'), reverse=True)
-            dates = [article for article in self.dates if article in articles]
-            obj_tag = {'category':tag, 'title':tag}
-            write(format_url(tag_url, obj_tag, add_file_suffix=True),
-                tag_template, self.context,
-                tag=tag,
-                articles=articles, dates=dates,
-                paginated={'articles': articles, 'dates': dates},
-                page_name=format_url(tag_url, obj_tag))
-
-        category_template = self.get_template('category')
-        category_url = self.settings.get('CATEGORY_URL', 'category/:title.html')
-        for cat, articles in self.categories:
-            dates = [article for article in self.dates if article in articles]
-            obj_cat = {'category':cat, 'title':cat}
-            write(format_url(category_url, obj_cat, add_file_suffix=True), category_template, self.context,
-                category=cat, articles=articles, dates=dates,
-                paginated={'articles': articles, 'dates': dates},
-                page_name=format_url(category_url, obj_cat))
-
-        author_template = self.get_template('author')
-        author_url = self.settings.get('AUTHOR_URL', 'author/:title.html')
-        for aut, articles in self.authors:
-            dates = [article for article in self.dates if article in articles]
-            obj_aut = {'author':aut, 'title':aut}
-            write(format_url(author_url, obj_aut, add_file_suffix=True), author_template, self.context,
-                author=aut, articles=articles, dates=dates,
-                paginated={'articles': articles, 'dates': dates},
-                page_name=format_url(author_url, obj_aut))
+        self._grouped_write( self.tags.items(), 'tag', 'TAG_URL', write )
+        self._grouped_write( self.categories, 'category', 'CATEGORY_URL', write )
+        self._grouped_write( self.authors, 'author', 'AUTHOR_URL', write )
 
         for article in self.drafts:
             write('drafts/%s.html' % article.slug, article_template, self.context,
                     article=article, category=article.category)
+
+
+    def _grouped_write(self, elements, item_name, url_setting, write):
+        """ DRY wrapper method for taking care of generating content joined by 
+            an item (such as tag, or a category). """
+        url_setting_name = url_setting # or '%s_URL' % item_name.upper() # e.g: TAG_URL
+        url_setting_default = '%s/:title.html' % item_name.lower() # e.g: tag/:title.html
+        item_template = self.get_template( item_name ) # template_name is assumed to == item_name
+        item_url = self.settings.get( url_setting_name, url_setting_default )
+        for item, articles in elements:
+            articles.sort(key=attrgetter('date'), reverse=True)
+            dates = [article for article in self.dates if article in articles]
+            fmt_url = dict(((item_name,item),('title',item)))
+            kwargs = {
+                'articles': articles,
+                'dates': dates,
+                'paginated': {'articles': articles, 'dates': dates},
+                'page_name': format_url(item_url, fmt_url),
+            }
+            kwargs[item_name] = item
+            write(format_url(item_url, fmt_url, add_file_suffix=True),
+                item_template, self.context, **kwargs)
+
 
     def generate_context(self):
         """change the context"""
