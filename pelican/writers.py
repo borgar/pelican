@@ -2,6 +2,7 @@
 from __future__ import with_statement
 import os
 import re
+import urlparse
 from codecs import open
 from functools import partial
 import locale
@@ -30,10 +31,9 @@ class Writer(object):
 
 
     def _add_item_to_the_feed(self, feed, item):
-
         feed.add_item(
             title=item.title,
-            link='%s/%s' % (self.site_url, item.url),
+            link=urlparse.urljoin(self.site_url, item.url),
             description=item.content,
             categories=item.tags if hasattr(item, 'tags') else None,
             author_name=getattr(item, 'author', 'John Doe'),
@@ -54,7 +54,7 @@ class Writer(object):
         locale.setlocale(locale.LC_ALL, 'C')
         try:
             self.site_url = context.get('SITEURL', get_relative_path(filename))
-            self.feed_url= '%s/%s' % (self.site_url, filename)
+            self.feed_url = urlparse.urljoin(self.site_url, filename)
 
             feed = self._create_new_feed(feed_type, context)
 
