@@ -43,10 +43,13 @@ def slugify(value):
     return re.sub('[-\s]+', '-', value)
 
 
-def format_url( inurl, props, add_file_suffix=False ):
-    bits = re.split(ur'(\:[a-z]+)', inurl)
-    url = u''.join(props.get(bit[1:],bit) if bit.startswith(':') else bit
-                  for bit in bits )
+def format_url(url_tmpl, props, add_file_suffix=False):
+    # replace any keywords found, else leave them be (for settings debugging)
+    url = u''.join([ props.get(bit[1:],bit) if bit.startswith(':') else bit
+                     for bit in re.split(ur'(\:[a-z]+)', url_tmpl) ])
+    # remove any sequences of url separators and trailing dashes
+    url = re.sub(ur'([\\/-])[\\\/\.-]+', r'\1', url).rstrip('-')
+    # add a file extension (or file) if requested
     if add_file_suffix and not url.endswith('.html'):
         if url.endswith('/'):
             url = "%sindex.html" % url
