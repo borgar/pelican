@@ -43,6 +43,11 @@ _DEFAULT_CONFIG = {'PATH': None,
                    'DEFAULT_METADATA': (),
                    'FILES_TO_COPY': (),
                    'DEFAULT_STATUS': 'published',
+                   'ARTICLE_URL': ':title-:altlang.html',
+                   'PAGE_URL': 'pages/:title-:altlang.html',
+                   'CATEGORY_URL': 'category/:title.html',
+                   'TAG_URL': 'tag/:title.html',
+                   'AUTHOR_URL': 'author/:title.html',
                    'ARTICLE_PERMALINK_STRUCTURE': ''
                    }
 
